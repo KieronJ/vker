@@ -745,7 +745,6 @@ void Renderer::CreateTexture()
     assert(pixels);
 
     Buffer staging_buffer;
-
     staging_buffer.Setup(m_allocator, width * height * 4, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     
     void *address = staging_buffer.Map();
@@ -759,12 +758,31 @@ void Renderer::CreateTexture()
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    VK_CHECK(vkBeginCommandBuffer(m_command_buffers[0], &begin_info));
+    const VkCommandBuffer cmd = m_command_buffers[0];
+
+    VK_CHECK(vkBeginCommandBuffer(cmd, &begin_info));
+
+    {
+        VkImageMemoryBarrier image_barrier{};
+        image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        image_barrier.srcAccessMask = 0;
+        image_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        image_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        image_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        image_barrier.image = m_texture.Handle();
+        image_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        image_barrier.subresourceRange.baseMipLevel = 0;
+        image_barrier.subresourceRange.levelCount = 1;
+        image_barrier.subresourceRange.baseArrayLayer = 0;
+        image_barrier.subresourceRange.layerCount = 1;
+
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_barrier);
+    }
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
-    region.bufferRowLength = width;
-    region.bufferImageHeight = height;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -772,9 +790,26 @@ void Renderer::CreateTexture()
     region.imageOffset = { 0, 0, 0 };
     region.imageExtent = { size.width, size.height, 1 };
 
-    vkCmdCopyBufferToImage(m_command_buffers[0], staging_buffer.Handle(), m_texture.Handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(cmd, staging_buffer.Handle(), m_texture.Handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    VK_CHECK(vkEndCommandBuffer(m_command_buffers[0]));
+    {
+        VkImageMemoryBarrier image_barrier{};
+        image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        image_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        image_barrier.image = m_texture.Handle();
+        image_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        image_barrier.subresourceRange.baseMipLevel = 0;
+        image_barrier.subresourceRange.levelCount = 1;
+        image_barrier.subresourceRange.baseArrayLayer = 0;
+        image_barrier.subresourceRange.layerCount = 1;
+
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_barrier);
+    }
+
+    VK_CHECK(vkEndCommandBuffer(cmd));
 
     const VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
