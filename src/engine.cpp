@@ -122,18 +122,18 @@ void Engine::Run()
             fmt::print("camera pos. x={:.02f}, y={:.02f}, z={:.02f}\n", cam.pos.x, cam.pos.y, cam.pos.z);
             fmt::print("camera dir. x={:.02f}, y={:.02f}, z={:.02f}\n", cam.dir.x, cam.dir.y, cam.dir.z);
         }
-        
-        if (m_window.GetKeyState(GLFW_KEY_1) == GLFW_PRESS) {
-            mouse_focus = false;
-            m_window.SetInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-        
+
         if (m_window.GetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
             mouse_focus = true;
             m_window.SetInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             m_window.GetCursor(mouse_pos.x, mouse_pos.y);
         }
         
+        if (m_window.GetMouseButton(GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
+            mouse_focus = false;
+            m_window.SetInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+
         if (mouse_focus) {
             double x, y;
             m_window.GetCursor(x, y);
