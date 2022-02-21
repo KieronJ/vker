@@ -45,7 +45,7 @@ void Model::Draw(VkCommandBuffer cmd) const
     vkCmdBindIndexBuffer(cmd, m_index_buffer.Handle(), 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindVertexBuffers(cmd, 0, 1, &vertex_buffer, &offset);
 
-    vkCmdDrawIndexed(cmd, (u32)vertices.size(), (u32)indices.size(), 0, 0, 0);
+    vkCmdDrawIndexed(cmd, (u32)indices.size(), 1, 0, 0, 0);
 }
 
 } // namespace vker
