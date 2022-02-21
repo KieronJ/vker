@@ -47,8 +47,8 @@ void Engine::Setup()
             vertex.pos.y = attrib.vertices[ind.vertex_index * 3 + 1];
             vertex.pos.z = attrib.vertices[ind.vertex_index * 3 + 2];
 
-            vertex.tex.u = attrib.texcoords[ind.texcoord_index * 2];
-            vertex.tex.v = 1.0f - attrib.texcoords[ind.texcoord_index * 2 + 1];
+            vertex.tex.x = attrib.texcoords[ind.texcoord_index * 2];
+            vertex.tex.y = 1.0f - attrib.texcoords[ind.texcoord_index * 2 + 1];
 
             model.indices.push_back(model.indices.size());
             model.vertices.push_back(vertex);
