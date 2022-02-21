@@ -60,8 +60,6 @@ void Engine::Setup()
 
 void Engine::Run()
 {
-    double yaw = 0.0f, pitch = 0.0f;
-
     bool mouse_focus = false;
 
     auto last_second = std::chrono::high_resolution_clock::now();
@@ -71,12 +69,15 @@ void Engine::Run()
 
     Camera cam;
     cam.pos = glm::vec3(-5.0f, -10.0f, 0.0f);
-    cam.dir = glm::vec3(0.0f) - cam.pos;
+    cam.dir = glm::normalize(glm::vec3(0.0f) - cam.pos);
     cam.up = glm::vec3(0.0f, 0.0f, -1.0f);
     cam.aspect = Width / static_cast<float>(Height);
     cam.fov = 45.0f;
 
-    glm::vec2 mouse_pos{ Width / 2.0f, Height / 2.0f };
+    float yaw = glm::degrees(atan2(cam.dir.y, cam.dir.x));
+    float pitch = glm::degrees(asin(-cam.dir.z));
+
+    glm::dvec2 mouse_pos{ Width / 2.0f, Height / 2.0f };
 
     m_window.SetResizeCallback([=](int w, int h) {
         m_renderer.InvalidateSwapchain();
@@ -90,7 +91,7 @@ void Engine::Run()
         const float fps = (1000000.0f * float(frames)) / float(second_duration);
         const float delta = float(frame_duration) / 1000000.0f;
 
-        //fmt::print("{:.02f} fps ({:.02f} ms / frame)\n", fps, delta);
+        //fmt::print("{:.02f} fps ({:.02f} ms / frame)\n", fps, delta * 1000.0f);
 
         if (second_duration >= 1000000) {
             last_second = current_time;
@@ -130,6 +131,7 @@ void Engine::Run()
         if (m_window.GetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
             mouse_focus = true;
             m_window.SetInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            m_window.GetCursor(mouse_pos.x, mouse_pos.y);
         }
         
         if (mouse_focus) {
@@ -139,18 +141,18 @@ void Engine::Run()
             const double dx = x - mouse_pos.x;
             const double dy = y - mouse_pos.y;
         
-            mouse_pos.x = float(x);
-            mouse_pos.y = float(y);
+            mouse_pos.x = x;
+            mouse_pos.y = y;
         
             yaw += LookSpeed * dx;
             pitch -= LookSpeed * dy;
         
-            yaw = std::fmod(yaw, 360.0);
-            pitch = std::clamp(pitch, -89.0, 89.0);
+            yaw = std::fmod(yaw, 360.0f);
+            pitch = std::clamp(pitch, -89.0f, 89.0f);
         
-            cam.dir.x = float(cos(glm::radians(yaw)) * cos(glm::radians(pitch)));
-            cam.dir.z = float(sin(glm::radians(pitch)));
-            cam.dir.y = float(sin(glm::radians(yaw)) * cos(glm::radians(pitch)));
+            cam.dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+            cam.dir.z = sin(glm::radians(pitch));
+            cam.dir.y = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
         
             cam.dir = glm::normalize(cam.dir);
         }
